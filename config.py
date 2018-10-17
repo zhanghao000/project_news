@@ -3,8 +3,6 @@ from redis import StrictRedis
 
 class Config(object):
     """项目基本配置"""
-    # 开启调试模式
-    DEBUG = True
 
     SECRET_KEY = "M+HsMyDEAQnFABFN0/tVEq/PhvyB6TAltR88pWdx9G1k66D3DDcASv0pMfJ1GHC4"
 
@@ -31,3 +29,21 @@ class Config(object):
                                 port=REDIS_PORT,
                                 password=REDIS_PASSWORD,
                                 db=REDIS_DB)
+
+
+class DevelopmentConfig(Config):
+    """开发环境下的配置"""
+    # 开启调试模式
+    DEBUG = True
+
+
+class ProductionConfig(Config):
+    """生产环境下的配置"""
+    # 关闭调试模式
+    DEBUG = False
+
+
+class TestingConfig(Config):
+    """测试环境下的配置"""
+    DEBUG = True
+    TESTING = True
