@@ -11,6 +11,7 @@ from config import config
 
 # 初始化数据库对象
 db = SQLAlchemy()
+redis_store = None  # type: StrictRedis
 
 
 def setup_log(config_name):
@@ -42,14 +43,21 @@ def create_app(config_name):
     db.init_app(app)
 
     # 初始化redis对象
+    global redis_store
     redis_store = StrictRedis(host=config[config_name].REDIS_HOST,
                               port=config[config_name].REDIS_PORT,
                               password=config[config_name].REDIS_PASSWORD,
-                              db=config[config_name].REDIS_DB)
+                              db=config[config_name].REDIS_DB,
+                              decode_responses=True)
 
     # 初始化Session配置
     Session(app)
 
     # 设置csrf保护
     CSRFProtect(app)
+
+    # 注册首页蓝图
+    from info.modules.news import index_blu
+    app.register_blueprint(index_blu)
+
     return app
