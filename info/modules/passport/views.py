@@ -1,13 +1,75 @@
 import random
 import re
+from datetime import datetime
 
-from flask import request, jsonify, current_app, make_response
+from flask import request, jsonify, current_app, make_response, session
 
-from info import redis_store, constants
+from info import redis_store, constants, db
 from info.models import User
 from info.modules.passport import passport_blu
 from info.utils.captcha.captcha import captcha
 from info.utils.response_code import RET
+
+
+@passport_blu.route("/register", methods=["post"])
+def register():
+    """
+    点击注册按钮,发起注册请求
+    :return: 返回注册结果, errno 和 errmsg
+    """
+    # 1. 获取参数
+    params_dict = request.json
+    if not params_dict:
+        return jsonify(errno=RET.REQERR, errmsg="请求错误")
+    mobile = params_dict.get("mobile")
+    sms_code = params_dict.get("smscode")
+    password = params_dict.get("password")
+
+    # 2. 参数校验
+    # 非空校验
+    if not all([mobile, sms_code, password]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数错误")
+
+    # 手机号正则验证
+    if not re.match(r"^1[3578]\d{9}$", mobile):
+        return jsonify(errno=RET.DATAERR, errmsg="手机号格式不正确")
+
+    # 3. 从redis中获取短信验证码, 进行核对
+    try:
+        real_sms_code = redis_store.get("SMS_" + mobile)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="数据库查询错误")
+    if not real_sms_code:
+        return jsonify(errno=RET.NODATA, errmsg="短信验证码过期")
+    if real_sms_code != sms_code:
+        return jsonify(errno=RET.DATAERR, errmsg="短信验证码输入错误")
+
+    # 验证通过, 删除redis中的短信验证码
+    try:
+        redis_store.delete("SMS_" + mobile)
+    except Exception as e:
+        current_app.logger.error(e)
+
+    # 4. 初始化user模型, 并保存到数据库中
+    user = User()
+    user.nick_name = mobile
+    user.mobile = mobile
+    # 保存密码, 自动调用propert装饰后的方法, 加密为passwor_hash
+    user.password = password
+    # 记录最近登录的时间
+    user.last_login = datetime.now()
+
+    # 配置teardown后自动commit属性, 操作数据库后自动commit
+    db.session.add(user)
+
+    # 5. 记录用户登录状态到session
+    session["user_id"] = user.id
+    session["user_mobile"] = user.mobile
+    session["user_nick_name"] = user.nick_name
+
+    # 6. 返回注册结果
+    return jsonify(errno=RET.OK, errmsg="注册成功")
 
 
 @passport_blu.route("/sms_code", methods=["post"])

@@ -11,6 +11,8 @@ class Config(object):
     # mysql数据库连接配置
     SQLALCHEMY_DATABASE_URI = "mysql://root:123456@127.0.0.1:3306/project_news"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # 操作数据库后, 自动commit操作
+    SQLALCHEMY_COMMIT_ON_TEARDOWN = True
 
     # redis连接配置
     REDIS_HOST = "127.0.0.1"
