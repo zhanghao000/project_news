@@ -11,6 +11,47 @@ from info.utils.captcha.captcha import captcha
 from info.utils.response_code import RET
 
 
+@passport_blu.route("/login", methods=["post"])
+def login():
+    """
+    点击登录按钮, 发起登录请求
+    :return: 返回登录结果errno 和 errmsg
+    """
+    # 1. 获取参数
+    params_dict = request.json
+    if not params_dict:
+        return jsonify(errno=RET.REQERR, errmsg="请求错误")
+    mobile = params_dict.get("mobile")
+    password = params_dict.get("password")
+
+    # 2. 参数校验
+    if not all([mobile, password]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不全")
+
+    # 3. 查询用户是否存在
+    try:
+        user = User.query.filter(User.mobile == mobile).first()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="数据库查询错误")
+    if not user:
+        return jsonify(errno=RET.NODATA, errmsg="用户不存在")
+    # 密码校验, 调用check_password方法自动校验
+    if not user.check_passowrd(password):
+        return jsonify(errno=RET.PWDERR, errmsg="用户名或密码错误")
+
+    # 4. 记录最近登录的时间, 修改数据自动commit
+    user.last_login = datetime.now()
+
+    # 5. 记录用户登录状态到session
+    session["user_id"] = user.id
+    session["user_mobile"] = user.mobile
+    session["user_nick_name"] = user.nick_name
+
+    # 6. 返回登录结果
+    return jsonify(errno=RET.OK, errmsg="登录成功")
+
+
 @passport_blu.route("/register", methods=["post"])
 def register():
     """
