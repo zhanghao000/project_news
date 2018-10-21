@@ -1,7 +1,7 @@
 from flask import render_template, current_app, session
 
 from info import constants
-from info.models import User, News
+from info.models import User, News, Category
 from info.modules.news import index_blu
 
 
@@ -28,11 +28,22 @@ def index():
         news_list = News.query.order_by(News.create_time.desc()).limit(constants.CLICK_RANK_MAX_NEWS)
     except Exception as e:
         current_app.logger(e)
-    news_list = [news.to_basic_dict() for news in news_list]
+    if not news_list:
+        news_list = [news.to_basic_dict() for news in news_list]
+
+    # 查询首页新闻分类数据并返回
+    category_list = []
+    try:
+        category_list = Category.query.all()
+    except Exception as e:
+        current_app.logger.error(e)
+    if not category_list:
+        category_list = [category.to_dict() for category in category_list]
 
     data = {
         "user_info": user_info,
-        "news_list": news_list
+        "news_list": news_list,
+        "category_list": category_list
     }
     return render_template("news/index.html", data=data)
 
