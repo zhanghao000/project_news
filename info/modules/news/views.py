@@ -12,18 +12,17 @@ def index():
     """
 
     # 从session中获取当前用户的登录状态
-    user_id = session["user_id"]
+    user_id = session.get("user_id")
     user = None
     if user_id:
         try:
-            user = User.query.get(user_id)
+            user = User.query.filter().get(user_id)
         except Exception as e:
             current_app.logger.error(e)
     user_info = user.to_dict() if user else None
     data = {
         "user_info": user_info
     }
-
     return render_template("news/index.html", data=data)
 
 

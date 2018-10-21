@@ -11,6 +11,19 @@ from info.utils.captcha.captcha import captcha
 from info.utils.response_code import RET
 
 
+@passport_blu.route("/logout")
+def logout():
+    """
+    退出登录, 删除session中的值
+    :return: 返回退出信息
+    """
+    session.pop("user_id", None)
+    session.pop("user_mobile", None)
+    session.pop("user_nick_name", None)
+
+    return jsonify(errno=RET.OK, errmsg="已退出")
+
+
 @passport_blu.route("/login", methods=["post"])
 def login():
     """
