@@ -46,6 +46,12 @@ def send_sms_code():
     if real_image_code.upper() != image_code.upper():
         return jsonify(errno=RET.DATAERR, errmsg="图片验证码输入错误")
 
+    # 验证成功, 删除redis中的图片验证码内容
+    try:
+        redis_store.delete("ImageCodeId_" + image_code_id)
+    except Exception as e:
+        current_app.logger.error(e)
+
     # 4. 校验该手机号是否已被注册
     try:
         user = User.query.filter(User.mobile == mobile).first()
@@ -53,7 +59,7 @@ def send_sms_code():
         current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg="数据库查询错误")
 
-    if not user:
+    if user:
         return jsonify(errno=RET.DATAEXIST, errmsg="该手机号已被注册")
 
     # 5. 生成随机的六位数字, 发送短信验证码

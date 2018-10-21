@@ -22,8 +22,9 @@ class Config(object):
     # 配置session存储在redis
     SESSION_TYPE = "redis"
     # 设置session会过期, 设置过期时间
-    SESSION_PERMANENT = False
+    # SESSION_PERMANENT = False
     PERMANENT_SESSION_LIFETIME = 86400 * 2
+    # PERMANENT_SESSION_LIFETIME = 60 * 2
     # 设置cookie中的session_id被加密签名处理
     SESSION_USE_SIGNER = True
     # 保存session的redis连接配置
